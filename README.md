@@ -9,3 +9,6 @@ browser, or serve it with GitHub Pages. Progress is saved in the browser's
 `localStorage`, so it stays on the device you used.
 
 To update the film list, edit the `FILMS` array near the top of the script.
+Each film lists its director and cast as `character=Actor|note`. Recasts and
+variants (a character played by more than one actor) are worked out from that
+data automatically, so adding a cast entry is all it takes.
