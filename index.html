@@ -183,6 +183,9 @@ footer { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 12px; justify-co
 .castbtn:hover { border-color: var(--ink); }
 .castbtn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .castbtn[aria-expanded="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.stars { margin-top: 5px; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.stars .hero { color: var(--ink); font-weight: 600; }
+.stars .sep { margin: 0 6px; opacity: .5; }
 .cast { grid-column: 1 / -1; border-top: 1.5px dashed var(--line); padding-top: 10px; }
 .cast ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 18px; }
 .cast li { min-width: 0; font-size: 13.5px; line-height: 1.35; }
@@ -287,7 +290,7 @@ const FILMS = [
   { id:"bp1",  t:"Black Panther", release:"2018-02-16", phase:3, chrono:17, set:"2016", min:134, dir:"Ryan Coogler",
     cast:"tchalla=Chadwick Boseman;killmonger=Michael B. Jordan;nakia=Lupita Nyong'o;okoye=Danai Gurira;shuri=Letitia Wright;mbaku=Winston Duke;ramonda=Angela Bassett;everett=Martin Freeman;klaue=Andy Serkis;bucky=Sebastian Stan|post-credits" },
   { id:"av3",  t:"Avengers: Infinity War", release:"2018-04-27", phase:3, chrono:22, set:"2018", min:149, dir:"Anthony & Joe Russo",
-    cast:"thanos=Josh Brolin;tony=Robert Downey Jr.;thor=Chris Hemsworth;banner=Mark Ruffalo;steve=Chris Evans;natasha=Scarlett Johansson;strange=Benedict Cumberbatch;peter=Tom Holland;tchalla=Chadwick Boseman;wanda=Elizabeth Olsen;vision=Paul Bettany;quill=Chris Pratt;gamora=Zoe Saldaña;rhodey=Don Cheadle;bucky=Sebastian Stan;sam=Anthony Mackie;nebula=Karen Gillan;loki=Tom Hiddleston;redskull=Ross Marquand;ross=William Hurt" },
+    cast:"tony=Robert Downey Jr.;thor=Chris Hemsworth;banner=Mark Ruffalo;steve=Chris Evans;thanos=Josh Brolin;natasha=Scarlett Johansson;strange=Benedict Cumberbatch;peter=Tom Holland;tchalla=Chadwick Boseman;wanda=Elizabeth Olsen;vision=Paul Bettany;quill=Chris Pratt;gamora=Zoe Saldaña;rhodey=Don Cheadle;bucky=Sebastian Stan;sam=Anthony Mackie;nebula=Karen Gillan;loki=Tom Hiddleston;redskull=Ross Marquand;ross=William Hurt" },
   { id:"ant2", t:"Ant-Man and the Wasp", release:"2018-07-06", phase:3, chrono:21, set:"2018", min:118, dir:"Peyton Reed",
     cast:"scott=Paul Rudd;hope=Evangeline Lilly;hank=Michael Douglas;janet=Michelle Pfeiffer;ghost=Hannah John-Kamen;foster=Laurence Fishburne;luis=Michael Peña;cassie=Abby Ryder Fortson" },
   { id:"cm1",  t:"Captain Marvel", release:"2019-03-08", phase:3, chrono:2, set:"1995", min:123, dir:"Anna Boden & Ryan Fleck",
@@ -519,12 +522,15 @@ function row(f, nextFilm) {
   const q = state.q.trim().toLowerCase();
   const castHit = q && f.roles.some(r => (r.name + " " + r.actor).toLowerCase().includes(q));
   const open = state.open.has(f.id) || castHit;
+  // Top billing: the first four credited roles, skipping cameos, credit scenes and cross-universe variants.
+  const stars = out ? f.roles.filter(r => !/cameo|credits|variant/i.test(r.tag)).slice(0, 4) : [];
   const badge = f.variant ? `<span class="badge">Variants</span>` : f.recast ? `<span class="badge">Recast</span>` : "";
   return `<li class="${cls}" style="--pc:${pc}">
     <div class="num">${n}</div>
     <div class="info">
       <div class="title">${hl(f.t)}</div>
       <div class="meta">${when}<span>${fmtRun(f.min)}</span><span>Dir. ${hl(f.dir)}</span>${f.note ? `<span class="note">${esc(f.note)}</span>` : ""}${badge}</div>
+      ${stars.length ? `<div class="stars">${stars.map(r => `<span class="hero">${hl(r.name.split(" / ").at(-1))}</span> ${hl(r.actor)}`).join('<span class="sep">·</span>')}</div>` : ""}
       <button class="castbtn" type="button" data-cast="${f.id}" aria-expanded="${open}" aria-controls="cast-${f.id}">${open ? "Hide cast" : `Cast${f.roles.length ? ` · ${f.roles.length}` : ""}`}</button>
     </div>
     ${out
