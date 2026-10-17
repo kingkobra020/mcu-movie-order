@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MCU Watch Order</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one narrow column — a sticky control bar over a numbered watch list, banded by phase (release) or by in-story year (chronological). */
+:root {
+  --paper: #eef1f6;
+  --card: #ffffff;
+  --ink: #141a2b;
+  --muted: #5d6680;
+  --line: #d5dbe7;
+  --accent: #d62839;
+  --accent-ink: #ffffff;
+  --gold: #e8a317;
+  --done: #2f8f5b;
+  --p1: #c0392b; --p2: #d9822b; --p3: #7b4fd1; --p4: #1f7fb8; --p5: #1a9a7a; --p6: #c23b8b;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1320; --card: #181e30; --ink: #e9ecf5; --muted: #98a1ba; --line: #2a3249;
+    --accent: #ff4757; --accent-ink: #ffffff; --gold: #f5b83d; --done: #4cc38a;
+    --p1: #ff6b5b; --p2: #ffa24c; --p3: #a98bff; --p4: #4fb3f0; --p5: #3fd0a8; --p6: #f06bbd;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1320; --card: #181e30; --ink: #e9ecf5; --muted: #98a1ba; --line: #2a3249;
+  --accent: #ff4757; --accent-ink: #ffffff; --gold: #f5b83d; --done: #4cc38a;
+  --p1: #ff6b5b; --p2: #ffa24c; --p3: #a98bff; --p4: #4fb3f0; --p5: #3fd0a8; --p6: #f06bbd;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+  background-image: radial-gradient(color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1.2px);
+  background-size: 14px 14px;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--paper);
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+
+header.hero { padding-block: 36px 18px; display: grid; gap: 6px; }
+.eyebrow {
+  font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+}
+h1 {
+  font-family: var(--display); font-weight: 900; text-transform: uppercase;
+  font-size: clamp(48px, 13vw, 96px); line-height: .86; margin: 0; letter-spacing: -.01em;
+  text-wrap: balance;
+}
+h1 span { color: var(--accent); }
+.lede { color: var(--muted); margin: 6px 0 0; max-width: 56ch; }
+
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(8px);
+  padding-block: 12px; border-bottom: 2px solid var(--ink);
+  display: grid; gap: 12px;
+}
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.seg {
+  display: inline-flex; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; background: var(--card);
+}
+.seg button {
+  font: 600 13px/1 var(--body); color: var(--ink); background: transparent; border: 0;
+  padding: 9px 14px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.seg button:focus-visible, .check:focus-visible, .linkbtn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.meter { display: grid; gap: 6px; }
+.meter-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.meter-top strong { font-family: var(--display); font-size: 22px; font-weight: 900; letter-spacing: .02em; }
+.meter-top .hours { font-family: var(--mono); color: var(--muted); font-size: 12px; align-self: end; }
+.track { height: 12px; border: 2px solid var(--ink); border-radius: 999px; background: var(--card); overflow: hidden; }
+.fill { height: 100%; width: 0; background: repeating-linear-gradient(-45deg, var(--accent) 0 8px, color-mix(in srgb, var(--accent) 80%, var(--gold)) 8px 16px); transition: width .4s ease; }
+
+.next {
+  margin-top: 18px; padding: 14px 16px; border: 2px solid var(--ink); background: var(--gold); color: #1b1404;
+  border-radius: 14px; box-shadow: 5px 5px 0 var(--ink); display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+}
+.next .label { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+.next .t { font-family: var(--display); font-weight: 900; font-size: 26px; line-height: 1; text-transform: uppercase; }
+.next button {
+  font: 600 13px var(--body); border: 2px solid #1b1404; background: #fff8e6; color: #1b1404;
+  border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+
+.group { margin-top: 28px; }
+.group h2 {
+  display: flex; align-items: baseline; gap: 10px; margin: 0 0 10px;
+  font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: 30px; line-height: 1;
+}
+.group h2 .chip {
+  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  padding: 4px 8px; border-radius: 999px; color: var(--accent-ink); background: var(--pc);
+  transform: translateY(-4px);
+}
+.group h2 small { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); text-transform: none; margin-left: auto; }
+
+ol.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.row {
+  display: grid; grid-template-columns: 54px 1fr auto; gap: 12px; align-items: center;
+  background: var(--card); border: 1.5px solid var(--line); border-left: 6px solid var(--pc);
+  border-radius: 10px; padding: 10px 12px 10px 10px;
+  transition: transform .15s ease, opacity .2s ease;
+}
+.row:hover { transform: translateX(3px); }
+.row.is-next { border-color: var(--ink); border-left-color: var(--pc); box-shadow: 4px 4px 0 var(--gold); }
+.num {
+  font-family: var(--display); font-weight: 900; font-size: 34px; line-height: 1; text-align: center;
+  color: var(--pc); font-variant-numeric: tabular-nums;
+}
+.info { min-width: 0; }
+.title { font-weight: 600; font-size: 16px; line-height: 1.25; }
+.meta { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 3px; }
+.meta .note { font-family: var(--body); font-style: italic; }
+.row.watched .title { text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: var(--done); }
+.row.watched { opacity: .62; }
+.row.upcoming { border-style: dashed; border-left-style: solid; }
+.soon {
+  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--accent); white-space: nowrap;
+}
+
+.check {
+  width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--ink); background: var(--card);
+  cursor: pointer; display: grid; place-items: center; color: transparent; padding: 0;
+}
+.check svg { width: 20px; height: 20px; }
+.row.watched .check { background: var(--done); border-color: var(--done); color: #fff; }
+.check:disabled { cursor: not-allowed; border-style: dashed; opacity: .55; }
+
+footer { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.linkbtn { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+.confirm { display: inline-flex; gap: 8px; align-items: center; }
+.confirm button { font: 600 12px var(--body); border-radius: 999px; padding: 5px 10px; cursor: pointer; border: 1.5px solid var(--ink); background: var(--card); color: var(--ink); }
+.confirm button.danger { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 140%);
+  background: var(--ink); color: var(--paper); font-family: var(--display); font-weight: 900; font-size: 26px;
+  text-transform: uppercase; padding: 10px 22px; border-radius: 12px; transition: transform .3s cubic-bezier(.2,1.4,.4,1);
+  pointer-events: none; white-space: nowrap; max-width: calc(100% - 32px);
+}
+.toast.show { transform: translate(-50%, 0); }
+
+@media (max-width: 480px) {
+  .row { grid-template-columns: 40px 1fr auto; gap: 10px; }
+  .num { font-size: 28px; }
+  .group h2 small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Marvel Cinematic Universe · every film</div>
+    <h1>MCU <span>Watch</span> Order</h1>
+    <p class="lede">Check off each film as you go. Flip between the order they hit theaters and the order the story happens in.</p>
+  </header>
+
+  <div class="bar">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Order">
+        <button id="mode-release" type="button" data-mode="release" aria-pressed="true">Release date</button>
+        <button id="mode-chrono" type="button" data-mode="chrono" aria-pressed="false">Chronological</button>
+      </div>
+      <div class="seg" role="group" aria-label="Show">
+        <button id="show-all" type="button" data-show="all" aria-pressed="true">All</button>
+        <button id="show-todo" type="button" data-show="todo" aria-pressed="false">To watch</button>
+        <button id="show-done" type="button" data-show="done" aria-pressed="false">Watched</button>
+      </div>
+    </div>
+    <div class="meter">
+      <div class="meter-top">
+        <span><strong id="count">0 / 0</strong> films watched</span>
+        <span class="hours" id="hours"></span>
+      </div>
+      <div class="track" aria-hidden="true"><div class="fill" id="fill"></div></div>
+    </div>
+  </div>
+
+  <div id="next"></div>
+  <main id="list"></main>
+
+  <footer>
+    <span>Progress is saved in this browser only.</span>
+    <span id="reset-slot"><button class="linkbtn" id="reset" type="button">Reset progress</button></span>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// release: theatrical date. chrono: position in story order. set: when it takes place. min: runtime.
+const FILMS = [
+  { id:"im1",  t:"Iron Man",                                     release:"2008-05-02", phase:1, chrono:3,  set:"2008",        min:126 },
+  { id:"hulk", t:"The Incredible Hulk",                          release:"2008-06-13", phase:1, chrono:5,  set:"2010",        min:112 },
+  { id:"im2",  t:"Iron Man 2",                                   release:"2010-05-07", phase:1, chrono:4,  set:"2010",        min:124 },
+  { id:"thor", t:"Thor",                                         release:"2011-05-06", phase:1, chrono:6,  set:"2010",        min:115 },
+  { id:"cap1", t:"Captain America: The First Avenger",           release:"2011-07-22", phase:1, chrono:1,  set:"1942–45",     min:124 },
+  { id:"av1",  t:"The Avengers",                                 release:"2012-05-04", phase:1, chrono:7,  set:"2012",        min:143 },
+  { id:"im3",  t:"Iron Man 3",                                   release:"2013-05-03", phase:2, chrono:8,  set:"2012",        min:130 },
+  { id:"thor2",t:"Thor: The Dark World",                         release:"2013-11-08", phase:2, chrono:9,  set:"2013",        min:112 },
+  { id:"cap2", t:"Captain America: The Winter Soldier",          release:"2014-04-04", phase:2, chrono:10, set:"2014",        min:136 },
+  { id:"gotg", t:"Guardians of the Galaxy",                      release:"2014-08-01", phase:2, chrono:11, set:"2014",        min:121 },
+  { id:"av2",  t:"Avengers: Age of Ultron",                      release:"2015-05-01", phase:2, chrono:13, set:"2015",        min:141 },
+  { id:"ant1", t:"Ant-Man",                                      release:"2015-07-17", phase:2, chrono:14, set:"2015",        min:117 },
+  { id:"cap3", t:"Captain America: Civil War",                   release:"2016-05-06", phase:3, chrono:15, set:"2016",        min:147 },
+  { id:"ds1",  t:"Doctor Strange",                               release:"2016-11-04", phase:3, chrono:19, set:"2016–17",     min:115 },
+  { id:"gotg2",t:"Guardians of the Galaxy Vol. 2",               release:"2017-05-05", phase:3, chrono:12, set:"2014",        min:136 },
+  { id:"sm1",  t:"Spider-Man: Homecoming",                       release:"2017-07-07", phase:3, chrono:18, set:"2016",        min:133 },
+  { id:"thor3",t:"Thor: Ragnarok",                               release:"2017-11-03", phase:3, chrono:20, set:"2017",        min:130 },
+  { id:"bp1",  t:"Black Panther",                                release:"2018-02-16", phase:3, chrono:17, set:"2016",        min:134 },
+  { id:"av3",  t:"Avengers: Infinity War",                       release:"2018-04-27", phase:3, chrono:22, set:"2018",        min:149 },
+  { id:"ant2", t:"Ant-Man and the Wasp",                         release:"2018-07-06", phase:3, chrono:21, set:"2018",        min:118 },
+  { id:"cm1",  t:"Captain Marvel",                               release:"2019-03-08", phase:3, chrono:2,  set:"1995",        min:123 },
+  { id:"av4",  t:"Avengers: Endgame",                            release:"2019-04-26", phase:3, chrono:23, set:"2018 & 2023", min:181 },
+  { id:"sm2",  t:"Spider-Man: Far From Home",                    release:"2019-07-02", phase:3, chrono:25, set:"2024",        min:129 },
+  { id:"bw",   t:"Black Widow",                                  release:"2021-07-09", phase:4, chrono:16, set:"2016",        min:134 },
+  { id:"sc",   t:"Shang-Chi and the Legend of the Ten Rings",    release:"2021-09-03", phase:4, chrono:24, set:"2024",        min:132 },
+  { id:"eter", t:"Eternals",                                     release:"2021-11-05", phase:4, chrono:26, set:"2024",        min:156 },
+  { id:"sm3",  t:"Spider-Man: No Way Home",                      release:"2021-12-17", phase:4, chrono:27, set:"2024",        min:148 },
+  { id:"ds2",  t:"Doctor Strange in the Multiverse of Madness",  release:"2022-05-06", phase:4, chrono:28, set:"2024–25",     min:126 },
+  { id:"thor4",t:"Thor: Love and Thunder",                       release:"2022-07-08", phase:4, chrono:29, set:"2025",        min:119 },
+  { id:"bp2",  t:"Black Panther: Wakanda Forever",               release:"2022-11-11", phase:4, chrono:30, set:"2025",        min:161 },
+  { id:"ant3", t:"Ant-Man and the Wasp: Quantumania",            release:"2023-02-17", phase:5, chrono:31, set:"2025",        min:124 },
+  { id:"gotg3",t:"Guardians of the Galaxy Vol. 3",               release:"2023-05-05", phase:5, chrono:32, set:"2026",        min:150 },
+  { id:"marv", t:"The Marvels",                                  release:"2023-11-10", phase:5, chrono:33, set:"2026",        min:105 },
+  { id:"dw",   t:"Deadpool & Wolverine",                         release:"2024-07-26", phase:5, chrono:34, set:"2024–27",     min:128 },
+  { id:"cap4", t:"Captain America: Brave New World",             release:"2025-02-14", phase:5, chrono:35, set:"2027",        min:118 },
+  { id:"tbolt",t:"Thunderbolts*",                                release:"2025-05-02", phase:5, chrono:36, set:"2027",        min:127 },
+  { id:"f4",   t:"The Fantastic Four: First Steps",              release:"2025-07-25", phase:6, chrono:38, set:"1964",        min:114, note:"Earth-828, a separate universe" },
+  { id:"sm4",  t:"Spider-Man: Brand New Day",                    release:"2026-07-31", phase:6, chrono:37, set:"2027",        min:null },
+  { id:"av5",  t:"Avengers: Doomsday",                           release:"2026-12-18", phase:6, chrono:39, set:"TBA",         min:null },
+  { id:"av6",  t:"Avengers: Secret Wars",                        release:"2027-12-17", phase:6, chrono:40, set:"TBA",         min:null },
+];
+
+const PHASES = {
+  1:{ name:"Phase One",   saga:"Infinity Saga" },
+  2:{ name:"Phase Two",   saga:"Infinity Saga" },
+  3:{ name:"Phase Three", saga:"Infinity Saga" },
+  4:{ name:"Phase Four",  saga:"Multiverse Saga" },
+  5:{ name:"Phase Five",  saga:"Multiverse Saga" },
+  6:{ name:"Phase Six",   saga:"Multiverse Saga" },
+};
+const ERAS = [
+  { name:"Origins",          test:f => /^19/.test(f.set) && f.id !== "f4" },
+  { name:"Infinity Saga",    test:f => f.chrono <= 23 },
+  { name:"After the Blip",   test:f => f.chrono <= 37 },
+  { name:"Beyond",           test:() => true },
+];
+const CHEERS = ["Excelsior!", "Avengers, assemble!", "I can do this all day", "Wakanda forever!", "I am Groot", "Snap!", "Nice."];
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+
+const state = {
+  mode: store.get("mcu-mode", "release"),
+  show: store.get("mcu-show", "all"),
+  watched: new Set(store.get("mcu-watched", [])),
+};
+
+const today = new Date(); today.setHours(0,0,0,0);
+const isOut = f => new Date(f.release + "T00:00:00") <= today;
+const fmtDate = s => new Date(s + "T00:00:00").toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" });
+const fmtRun = m => m ? `${Math.floor(m/60)}h ${String(m%60).padStart(2,"0")}m` : "runtime TBA";
+const daysUntil = f => Math.round((new Date(f.release + "T00:00:00") - today) / 86400000);
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function ordered() {
+  const key = state.mode === "chrono" ? (a,b) => a.chrono - b.chrono : (a,b) => a.release.localeCompare(b.release);
+  return [...FILMS].sort(key);
+}
+
+function groupsFor(list) {
+  const groups = [];
+  for (const f of list) {
+    let gkey, label, sub, color;
+    if (state.mode === "release") {
+      gkey = "p" + f.phase; label = PHASES[f.phase].name; sub = PHASES[f.phase].saga; color = `var(--p${f.phase})`;
+    } else {
+      const era = ERAS.find(e => e.test(f)); gkey = era.name; label = era.name; sub = ""; color = "var(--ink)";
+    }
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== gkey) { g = { key:gkey, label, sub, color, films:[] }; groups.push(g); }
+    g.films.push(f);
+  }
+  return groups;
+}
+
+function render() {
+  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
+  document.querySelectorAll("[data-show]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.show === state.show)));
+
+  const list = ordered();
+  const released = FILMS.filter(isOut);
+  const done = released.filter(f => state.watched.has(f.id));
+  const left = released.filter(f => !state.watched.has(f.id));
+  const minsLeft = left.reduce((s,f) => s + (f.min || 0), 0);
+  const minsDone = done.reduce((s,f) => s + (f.min || 0), 0);
+
+  document.getElementById("count").textContent = `${done.length} / ${released.length}`;
+  document.getElementById("fill").style.width = (released.length ? done.length / released.length * 100 : 0) + "%";
+  document.getElementById("hours").textContent = left.length
+    ? `${Math.round(minsDone/60)}h watched · ~${Math.round(minsLeft/60)}h to go`
+    : `${Math.round(minsDone/60)}h of Marvel. You did it.`;
+
+  const nextFilm = list.find(f => isOut(f) && !state.watched.has(f.id));
+  const nextEl = document.getElementById("next");
+  if (nextFilm) {
+    nextEl.innerHTML = `<div class="next"><div><div class="label">Up next · ${state.mode === "chrono" ? "story order" : "release order"}</div><div class="t">${nextFilm.t}</div></div><button type="button" data-watch="${nextFilm.id}">Mark watched</button></div>`;
+  } else {
+    const upcoming = FILMS.filter(f => !isOut(f)).sort((a,b) => a.release.localeCompare(b.release))[0];
+    nextEl.innerHTML = upcoming
+      ? `<div class="next"><div><div class="label">All caught up · next in theaters</div><div class="t">${upcoming.t} in ${daysUntil(upcoming)} days</div></div></div>`
+      : "";
+  }
+
+  const visible = list.filter(f => state.show === "all" || (state.show === "done") === state.watched.has(f.id));
+  const html = groupsFor(visible).map(g => `
+    <section class="group" style="--pc:${g.color}">
+      <h2>${g.label}${g.sub ? `<span class="chip">${g.sub}</span>` : ""}<small>${g.films.length} film${g.films.length > 1 ? "s" : ""}</small></h2>
+      <ol class="list">${g.films.map(f => row(f, nextFilm)).join("")}</ol>
+    </section>`).join("");
+  document.getElementById("list").innerHTML = html ||
+    `<p class="lede" style="margin-top:28px">${state.show === "done" ? "Nothing checked off yet. Pick a film and hit the circle." : "Every released film is watched. Nice work."}</p>`;
+}
+
+function row(f, nextFilm) {
+  const out = isOut(f), w = state.watched.has(f.id);
+  const n = state.mode === "chrono" ? f.chrono : FILMS.slice().sort((a,b) => a.release.localeCompare(b.release)).indexOf(f) + 1;
+  const pc = `var(--p${f.phase})`;
+  const when = state.mode === "chrono"
+    ? `<span>Set in ${f.set}</span><span>Released ${f.release.slice(0,4)}</span>`
+    : `<span>${fmtDate(f.release)}</span><span>Set in ${f.set}</span>`;
+  const cls = ["row", w && "watched", !out && "upcoming", nextFilm && nextFilm.id === f.id && "is-next"].filter(Boolean).join(" ");
+  return `<li class="${cls}" style="--pc:${pc}">
+    <div class="num">${n}</div>
+    <div class="info">
+      <div class="title">${f.t}</div>
+      <div class="meta">${when}<span>${fmtRun(f.min)}</span>${f.note ? `<span class="note">${f.note}</span>` : ""}</div>
+    </div>
+    ${out
+      ? `<button class="check" type="button" data-watch="${f.id}" aria-pressed="${w}" aria-label="${w ? "Unmark" : "Mark"} ${f.t} as watched">${CHECK}</button>`
+      : `<span class="soon">In ${daysUntil(f)}d</span>`}
+  </li>`;
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 1400);
+}
+
+document.addEventListener("click", e => {
+  const m = e.target.closest("[data-mode]");
+  if (m) { state.mode = m.dataset.mode; store.set("mcu-mode", state.mode); render(); return; }
+  const s = e.target.closest("[data-show]");
+  if (s) { state.show = s.dataset.show; store.set("mcu-show", state.show); render(); return; }
+  const w = e.target.closest("[data-watch]");
+  if (w) {
+    const id = w.dataset.watch;
+    if (state.watched.has(id)) state.watched.delete(id);
+    else {
+      state.watched.add(id);
+      const releasedCount = FILMS.filter(isOut).length;
+      toast(state.watched.size >= releasedCount ? "Whatever it takes!" : CHEERS[Math.floor(Math.random() * CHEERS.length)]);
+    }
+    store.set("mcu-watched", [...state.watched]);
+    render();
+    return;
+  }
+  if (e.target.id === "reset") {
+    document.getElementById("reset-slot").innerHTML =
+      `<span class="confirm">Clear all checkmarks? <button id="reset-yes" class="danger" type="button">Clear</button><button id="reset-no" type="button">Keep</button></span>`;
+    return;
+  }
+  if (e.target.id === "reset-yes" || e.target.id === "reset-no") {
+    if (e.target.id === "reset-yes") { state.watched.clear(); store.set("mcu-watched", []); render(); toast("Snapped away"); }
+    document.getElementById("reset-slot").innerHTML = `<button class="linkbtn" id="reset" type="button">Reset progress</button>`;
+  }
+});
+
+render();
+</script>
+</body>
+</html>
