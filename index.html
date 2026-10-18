@@ -207,6 +207,7 @@ mark { background: color-mix(in srgb, var(--gold) 55%, transparent); color: inhe
   /* Cast block drops below the number and checkbox to use the card's full width,
      as two columns of hero-over-actor pairs instead of a wrapped run-on line. */
   .extra { grid-column: 1 / -1; margin-top: 0; padding-left: 4px; }
+  .extra:not(:has(.stars)) { grid-column: 2 / -1; margin-top: -6px; padding-left: 0; }
   .stars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; font-size: 12.5px; }
   .stars li { white-space: normal; min-width: 0; }
   .stars .hero, .stars .actor { display: block; margin-left: 0; }
@@ -235,6 +236,9 @@ mark { background: color-mix(in srgb, var(--gold) 55%, transparent); color: inhe
         <button id="show-all" type="button" data-show="all" aria-pressed="true">All</button>
         <button id="show-todo" type="button" data-show="todo" aria-pressed="false">To watch</button>
         <button id="show-done" type="button" data-show="done" aria-pressed="false">Watched</button>
+      </div>
+      <div class="seg">
+        <button id="toggle-stars" type="button" aria-pressed="false">Top cast</button>
       </div>
       <label class="search" for="q"><input id="q" type="search" placeholder="Search film, director, character or actor" aria-label="Search films, directors, characters and actors" autocomplete="off"></label>
     </div>
@@ -434,6 +438,7 @@ const state = {
   mode: store.get("mcu-mode", "release"),
   show: store.get("mcu-show", "all"),
   watched: new Set(store.get("mcu-watched", [])),
+  stars: store.get("mcu-stars", false),
   q: "",
   open: new Set(),
 };
@@ -482,6 +487,7 @@ function groupsFor(list) {
 function render() {
   document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
   document.querySelectorAll("[data-show]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.show === state.show)));
+  document.getElementById("toggle-stars").setAttribute("aria-pressed", String(state.stars));
 
   const list = ordered();
   const released = FILMS.filter(isOut);
@@ -531,7 +537,7 @@ function row(f, nextFilm) {
   const castHit = q && f.roles.some(r => (r.name + " " + r.actor).toLowerCase().includes(q));
   const open = state.open.has(f.id) || castHit;
   // Top billing: the first four credited roles, skipping cameos, credit scenes and cross-universe variants.
-  const stars = out ? f.roles.filter(r => !/cameo|credits|variant/i.test(r.tag)).slice(0, 4) : [];
+  const stars = out && state.stars ? f.roles.filter(r => !/cameo|credits|variant/i.test(r.tag)).slice(0, 4) : [];
   const badge = f.variant ? `<span class="badge">Variants</span>` : f.recast ? `<span class="badge">Recast</span>` : "";
   return `<li class="${cls}" style="--pc:${pc}">
     <div class="num">${n}</div>
@@ -574,6 +580,7 @@ document.addEventListener("click", e => {
   if (m) { state.mode = m.dataset.mode; store.set("mcu-mode", state.mode); render(); return; }
   const s = e.target.closest("[data-show]");
   if (s) { state.show = s.dataset.show; store.set("mcu-show", state.show); render(); return; }
+  if (e.target.closest("#toggle-stars")) { state.stars = !state.stars; store.set("mcu-stars", state.stars); render(); return; }
   const c = e.target.closest("[data-cast]");
   if (c) {
     const id = c.dataset.cast, panel = document.getElementById("cast-" + id), opening = panel.hidden;
